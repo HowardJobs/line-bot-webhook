@@ -40,3 +40,8 @@ def webhook():
 
     # 無論如何都立刻回應 LINE 200 OK
     return jsonify({ "status": "ok" })
+
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=5000)
+
