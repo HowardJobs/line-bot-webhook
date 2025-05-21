@@ -1,9 +1,9 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 import requests
+import os
 
 app = Flask(__name__)
 
-import os
 CHANNEL_ACCESS_TOKEN = os.environ.get("CHANNEL_ACCESS_TOKEN")
 
 @app.route('/')
@@ -12,32 +12,31 @@ def home():
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    payload = request.json
-    print("🔔 收到 LINE 訊息：", payload)
+    # 立即回應 LINE，避免 timeout
+    try:
+        events = request.json.get("events", [])
+        for event in events:
+            if event["type"] == "message":
+                source = event.get("source", {})
+                if source.get("type") == "group":
+                    group_id = source.get("groupId")
+                    print(f"✅ 收到群組訊息，groupId：{group_id}")
 
-    # 從事件中取得群組 ID
-    if 'events' in payload:
-        for event in payload['events']:
-            source = event.get('source', {})
-            if source.get('type') == 'group':
-                group_id = source.get('groupId')
-                print(f"✅ 取得群組 ID：{group_id}")
+                    # 傳送訊息到群組
+                    headers = {
+                        "Authorization": f"Bearer {CHANNEL_ACCESS_TOKEN}",
+                        "Content-Type": "application/json"
+                    }
+                    data = {
+                        "to": group_id,
+                        "messages": [{
+                            "type": "text",
+                            "text": f"✅ Bot 收到你的訊息囉！這是群組 ID：{group_id}"
+                        }]
+                    }
+                    requests.post("https://api.line.me/v2/bot/message/push", headers=headers, json=data)
+    except Exception as e:
+        print("⚠️ webhook error:", str(e))
 
-                # 傳送確認訊息到該群組
-                reply_message = {
-                    "to": group_id,
-                    "messages": [{
-                        "type": "text",
-                        "text": f"✅ Bot 收到你的訊息囉！這是群組 ID：{group_id}"
-                    }]
-                }
-                headers = {
-                    "Authorization": f"Bearer {CHANNEL_ACCESS_TOKEN}",
-                    "Content-Type": "application/json"
-                }
-                requests.post('https://api.line.me/v2/bot/message/push',
-                              headers=headers, json=reply_message)
-    return 'OK'
-
-if __name__ == "__main__":
-    app.run(port=5000)
+    # 無論如何都立刻回應 LINE 200 OK
+    return jsonify({ "status": "ok" })
