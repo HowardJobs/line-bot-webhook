@@ -21,20 +21,7 @@ def webhook():
                 if source.get("type") == "group":
                     group_id = source.get("groupId")
                     print(f"✅ 收到群組訊息，groupId：{group_id}")
-
-                    # 傳送訊息到群組
-                    headers = {
-                        "Authorization": f"Bearer {CHANNEL_ACCESS_TOKEN}",
-                        "Content-Type": "application/json"
-                    }
-                    data = {
-                        "to": group_id,
-                        "messages": [{
-                            "type": "text",
-                            "text": f"✅ Bot 收到你的訊息囉！這是群組 ID：{group_id}"
-                        }]
-                    }
-                    requests.post("https://api.line.me/v2/bot/message/push", headers=headers, json=data)
+                    # 🔕 不發任何訊息回群組，只記錄 groupId
     except Exception as e:
         print("⚠️ webhook error:", str(e))
 
@@ -44,4 +31,3 @@ def webhook():
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
-
